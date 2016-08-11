@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: wordpress
+spec:
+  replicas: 1
+  selector:
+    app: wordpress
+  template:
+    metadata:
+      name: wordpress
+      labels:
+        app: wordpress
+    spec:
+      containers:
+      - name: wordpress
+        image: wordpress
+        env:
+          - name: WORDPRESS_DB_PASSWORD
+            value: tfm2016
+          - name: WORDPRESS_DB_HOST
+            value: mysqlservice:3306
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: wpservice
+  name: wpservice
+spec:
+  ports:
+    - port: 80
+  selector:
+    app: wordpress
+  type: LoadBalancer
+---
+apiVersion: extensions/v1beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: wphpa
+  namespace: default
+spec:
+  scaleRef:
+    kind: ReplicationController
+    name: wordpress
+    subresource: scale
+  minReplicas: 1
+  maxReplicas: 50
+  cpuUtilization:
+    targetPercentage: 50
