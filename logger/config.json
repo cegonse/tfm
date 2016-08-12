@@ -1,8 +1,8 @@
 {
-	"updateInterval": 10,
+	"updateInterval": 30,
 	"saveInterval": 150,
 	"format": "dlm",
 	"hpaName": "wphpa",
-	"output": "../stat/hpa_[date]",
+	"output": "hpa_[date]",
 	"verbose": true
 }

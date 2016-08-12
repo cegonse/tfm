@@ -26,12 +26,11 @@ function main()
 		"updateRate": settings.updateInterval,
 		"maxReplicas": 0,
 		"minReplicas": 0,
-		"currentInstances": [
-		],
-		"desiredInstances" : [
-		],
-		"cpuLoad": [
-		]
+		"targetCpu": 0,
+		"timeStamp": new Array(),
+		"currentInstances": new Array(),
+		"desiredInstances" : new Array(),
+		"cpuLoad": new Array()
 	};
 }
 
@@ -39,7 +38,33 @@ function saveData(fn, fmt)
 {
 	if (fmt == "dlm")
 	{
+		// Save the const settings as a separate dlm file
+		// if it doesn't exist
+		var constFn = "hpa_const.dlm";
 		
+		try
+		{
+			fs.statSync(constFn);
+		}
+		catch (e)
+		{
+			var dt = data.updateRate + " " + data.maxReplicas + " " + data.minReplicas +
+					 " " + data.targetCpu;
+			fs.writeFileSync(constFn, dt);
+		}
+		
+		// Save the logged data as a dlm matrix
+		// Column format:
+		// | Time | CurrentInstances | DesiredInstances | CPULoad |
+		var dt = "";
+		
+		for (var i = 0; i < data.timeStamp.length; i++)
+		{
+			dt += data.timeStamp[i] + " " + data.currentInstances[i] + " " + data.desiredInstances[i] +
+				  " " + data.cpuLoad[i] + "\n";
+		}
+		
+		fs.writeFileSync(fn, dt);
 	}
 	else if (fmt == "json")
 	{
@@ -56,8 +81,32 @@ function onUpdateData()
 	
 	// Attempt to run kubectl to retrieve the HPA status
 	var result = execSync("kubectl get hpa " + settings.hpaName + " -o json");
+	var jr = JSON.parse(result.toString());
 	
-	console.log(result);
+	// Add timestamp
+	data.timeStamp.push((new Date()).toISOString());
+	
+	// Add current instance count
+	data.currentInstances.push(jr.status.currentReplicas);
+	
+	// Add desired instance count
+	data.desiredInstances.push(jr.status.desiredReplicas);
+	
+	// Add current CPU load
+	data.cpuLoad.push(jr.status.currentCPUUtilizationPercentage);
+	
+	// Update the const settings
+	data.maxReplicas = jr.spec.maxReplicas;
+	data.minReplicas = jr.spec.minReplicas;
+	data.targetCpu = jr.spec.targetCPUUtilizationPercentage;
+	
+	if (settings.verbose)
+	{
+		console.log("[UPDATE] HPA status (" + data.timeStamp[data.timeStamp.length - 1] + "):");
+		console.log("[UPDATE] Current replicas: " + data.currentInstances[data.currentInstances.length - 1]);
+		console.log("[UPDATE] Desired replicas: " + data.desiredInstances[data.desiredInstances.length - 1]);
+		console.log("[UPDATE] Current CPU load: " + data.cpuLoad[data.cpuLoad.length - 1]);
+	}
 }
 
 function onSaveData()
