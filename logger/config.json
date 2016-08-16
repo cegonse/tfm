@@ -1,6 +1,6 @@
 {
 	"updateInterval": 30,
-	"saveInterval": 150,
+	"saveInterval": 300,
 	"format": "dlm",
 	"hpaName": "wphpa",
 	"output": "hpa_[date]",
