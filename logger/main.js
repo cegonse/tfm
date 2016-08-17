@@ -60,7 +60,7 @@ function saveData(fn, fmt)
 		
 		for (var i = 0; i < data.timeStamp.length; i++)
 		{
-			dt += data.timeStamp[i] + " " + data.currentInstances[i] + " " + data.desiredInstances[i] +
+			dt += data.timeStamp[i].getTime().toString() + " " + data.currentInstances[i] + " " + data.desiredInstances[i] +
 				  " " + data.cpuLoad[i] + "\n";
 		}
 		
@@ -84,7 +84,7 @@ function onUpdateData()
 	var jr = JSON.parse(result.toString());
 	
 	// Add timestamp
-	data.timeStamp.push((new Date()).toISOString());
+	data.timeStamp.push(new Date());
 	
 	// Add current instance count
 	data.currentInstances.push(jr.status.currentReplicas);
@@ -102,7 +102,7 @@ function onUpdateData()
 	
 	if (settings.verbose)
 	{
-		console.log("[UPDATE] HPA status (" + data.timeStamp[data.timeStamp.length - 1] + "):");
+		console.log("[UPDATE] HPA status (" + data.timeStamp[data.timeStamp.length - 1].toISOString() + "):");
 		console.log("[UPDATE] Current replicas: " + data.currentInstances[data.currentInstances.length - 1]);
 		console.log("[UPDATE] Desired replicas: " + data.desiredInstances[data.desiredInstances.length - 1]);
 		console.log("[UPDATE] Current CPU load: " + data.cpuLoad[data.cpuLoad.length - 1]);
