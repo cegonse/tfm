@@ -30,7 +30,9 @@ function main()
 		"timeStamp": new Array(),
 		"currentInstances": new Array(),
 		"desiredInstances" : new Array(),
-		"cpuLoad": new Array()
+		"cpuLoad": new Array(),
+		"mysqlMemUsage": new Array(),
+		"mysqlCpuUsage": new Array()
 	};
 }
 
@@ -61,7 +63,7 @@ function saveData(fn, fmt)
 		for (var i = 0; i < data.timeStamp.length; i++)
 		{
 			dt += data.timeStamp[i].getTime().toString() + " " + data.currentInstances[i] + " " + data.desiredInstances[i] +
-				  " " + data.cpuLoad[i] + "\n";
+				  " " + data.cpuLoad[i] + " " + data.mysqlMemUsage[i] + " " + data.mysqlCpuUsage[i] + "\n";
 		}
 		
 		fs.writeFileSync(fn, dt);
@@ -100,13 +102,40 @@ function onUpdateData()
 	data.minReplicas = jr.spec.minReplicas;
 	data.targetCpu = jr.spec.targetCPUUtilizationPercentage;
 	
+	// Request to Heapster the MySQL pod current memory usage
+	var mem = requestMysqlMemoryUsage();
+	data.mysqlMemUsage.push(mem);
+	
+	// Request the MySQL CPU usage
+	var cpu = requestMysqlCpuUsage();
+	data.mysqlCpuUsage.push(cpu);
+	
 	if (settings.verbose)
 	{
 		console.log("[UPDATE] HPA status (" + data.timeStamp[data.timeStamp.length - 1].toISOString() + "):");
 		console.log("[UPDATE] Current replicas: " + data.currentInstances[data.currentInstances.length - 1]);
 		console.log("[UPDATE] Desired replicas: " + data.desiredInstances[data.desiredInstances.length - 1]);
 		console.log("[UPDATE] Current CPU load: " + data.cpuLoad[data.cpuLoad.length - 1]);
+		console.log("[UPDATE] Current MySQL status: " + cpu + "% / " + mem / 1000000.0 + " MB");
 	}
+}
+
+function requestMysqlMemoryUsage()
+{
+	var url = "https://" + settings.kubeAddr + "/api/v1/proxy/namespaces/kube-system/services/heapster/api/v1/model/namespaces/default/pods/" + settings.mysqlPodName + "/metrics/memory/usage";
+	var result = execSync("curl -k -u admin:" + settings.kubePass + " " + url);
+	var jr = JSON.parse(result.toString());
+	
+	return jr.metrics[jr.metrics.length - 1].value;
+}
+
+function requestMysqlCpuUsage()
+{
+	var url = "https://" + settings.kubeAddr + "/api/v1/proxy/namespaces/kube-system/services/heapster/api/v1/model/namespaces/default/pods/" + settings.mysqlPodName + "/metrics/cpu/usage_rate";
+	var result = execSync("curl -k -u admin:" + settings.kubePass + " " + url);
+	var jr = JSON.parse(result.toString());
+	
+	return jr.metrics[jr.metrics.length - 1].value;
 }
 
 function onSaveData()

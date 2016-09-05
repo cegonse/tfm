@@ -3,6 +3,9 @@
 	"saveInterval": 300,
 	"format": "dlm",
 	"hpaName": "wphpa",
+	"mysqlPodName": "mysql",
 	"output": "hpa_[date]",
+	"kubeAddr": "50.19.40.158",
+	"kubePass": "VEl1kRoM54ImjOPg",
 	"verbose": true
 }
